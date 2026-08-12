@@ -16,7 +16,16 @@ NEW → READY_FOR_IMPLEMENTATION → IN_PROGRESS → READY_TO_CLOSE → CLOSED
 
 A handoff is evidence, not authority. Resolve conflicts using `.agent-sdlc/core/state-contract.md`.
 
-## `dev-new`
+## Managed lifecycle entities
+
+`/dev-merge` applies only to a proven managed Product Feature. Classify the current repository entity before any closure check:
+
+```text
+PRODUCT_FEATURE | NON_PRODUCT | UNKNOWN
+```
+
+`PRODUCT_FEATURE` continues the normal merge workflow. `NON_PRODUCT` returns `NOT_APPLICABLE` and stops before `READY_TO_CLOSE` or closure evidence checks. `UNKNOWN` returns `BLOCKED` with the inability to establish managed Product Feature identity. Read `.agent-sdlc/core/lifecycle-entity.md` for the evidence rules and status mapping.
+
 
 ```text
 PREFLIGHT → INTAKE → SPECIFY → CLARIFY → PLAN → TASKS

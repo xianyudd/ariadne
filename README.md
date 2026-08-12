@@ -20,11 +20,23 @@ Core owns lifecycle, state precedence, task DAG validation, ready-frontier calcu
 
 To add another host, add a thin adapter that loads the existing `.agent-sdlc/workflows/` and required policy files. Do not copy the workflow into the adapter.
 
-## Lifecycle
+## Managed lifecycle entity
+
+`/dev-merge` is not a generic Git merge command. It first classifies the current repository entity using `.agent-sdlc/core/lifecycle-entity.md`:
 
 ```text
-NEW → READY_FOR_IMPLEMENTATION → IN_PROGRESS → READY_TO_CLOSE → CLOSED
+PRODUCT_FEATURE | NON_PRODUCT | UNKNOWN
 ```
+
+```text
+PRODUCT_FEATURE + READY_TO_CLOSE gates → READY
+PRODUCT_FEATURE + missing gates         → BLOCKED
+NON_PRODUCT                             → NOT_APPLICABLE
+UNKNOWN                                 → BLOCKED
+```
+
+A workflow/infrastructure branch such as `agent-sdlc-v2` is `NON_PRODUCT` only when positive repository evidence supports that classification. A random branch with insufficient evidence remains `UNKNOWN`; absence of a Feature registration alone is not enough.
+
 
 - `/dev-new`: intake → Spec Kit artifacts → DAG validation → preparation checkpoint → Human Gate; no product code.
 - `/dev-next`: restore → DAG-aware one-batch selection → implement → project gates → commit → independent review/fix loop → handoff → stop.
