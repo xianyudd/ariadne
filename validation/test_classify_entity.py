@@ -81,4 +81,9 @@ assert module.classify_facts(
         changed_paths=["src/example.rs"],
     )
 ) == "UNKNOWN"
+assert module.decision_for_entity("PRODUCT_FEATURE", "READY_TO_CLOSE") == "CONTINUE"
+assert module.decision_for_entity("PRODUCT_FEATURE", "IN_PROGRESS") == "TERMINAL_BLOCKED"
+assert module.decision_for_entity("NON_PRODUCT") == "TERMINAL_NOT_APPLICABLE"
+assert module.decision_for_entity("UNKNOWN") == "TERMINAL_BLOCKED"
+assert module.decision_for_entity("PRODUCT_FEATURE", None) == "TERMINAL_BLOCKED"
 print("lifecycle classification checks passed")

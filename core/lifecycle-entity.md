@@ -25,7 +25,7 @@ Use the current repository facts, not a branch-name guess:
 
 Do not create Feature metadata, tasks, closure records, or lifecycle state to make a branch mergeable.
 
-## `/dev-merge` status mapping
+`/dev-merge` status mapping is separate from the execution decision. Use `.agent-sdlc/core/terminal-contract.md` for the host-independent `CONTINUE`/`TERMINAL_*` short-circuit semantics.
 
 ```text
 PRODUCT_FEATURE + all READY_TO_CLOSE gates → READY

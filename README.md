@@ -16,7 +16,7 @@ Core must not depend on a host tool name, model name, provider, context-window n
 
 ### Core vs adapter
 
-Core owns lifecycle, state precedence, task DAG validation, ready-frontier calculation, batch policy, review contract, Human Gates, Git policy, and context/session boundaries. Project policy owns quality gates, module ownership, persistence semantics, and protected paths. Adapters own only command exposure, portable loading instructions, host permissions, and reviewer delegation.
+Core owns lifecycle, terminal decision short-circuits, state precedence, task DAG validation, ready-frontier calculation, batch policy, review contract, Human Gates, Git policy, and context/session boundaries. Project policy owns quality gates, module ownership, persistence semantics, and protected paths. Adapters own only command exposure, portable loading instructions, host permissions, and reviewer delegation.
 
 To add another host, add a thin adapter that loads the existing `.agent-sdlc/workflows/` and required policy files. Do not copy the workflow into the adapter.
 
@@ -36,9 +36,18 @@ UNKNOWN                                 → BLOCKED
 ```
 
 A workflow/infrastructure branch such as `agent-sdlc-v2` is `NON_PRODUCT` only when positive repository evidence supports that classification. A random branch with insufficient evidence remains `UNKNOWN`; absence of a Feature registration alone is not enough.
+`/dev-merge` applies the terminal decision contract before any closure phase:
+
+```text
+PRODUCT_FEATURE + READY_TO_CLOSE → CONTINUE
+PRODUCT_FEATURE + IN_PROGRESS     → TERMINAL_BLOCKED
+NON_PRODUCT                      → TERMINAL_NOT_APPLICABLE
+UNKNOWN                          → TERMINAL_BLOCKED
+```
+
+Terminal decisions emit their status and stop immediately; only `CONTINUE` enters the normal Product Feature merge flow.
 
 
-- `/dev-new`: intake → Spec Kit artifacts → DAG validation → preparation checkpoint → Human Gate; no product code.
 - `/dev-next`: restore → DAG-aware one-batch selection → implement → project gates → commit → independent review/fix loop → handoff → stop.
 - `/dev-close`: final gates, smoke, scope and review audit → `READY_TO_CLOSE` Human Gate; never merges.
 - `/dev-merge`: closure checkpoint → normal merge policy → post-merge gates → `CLOSED`; never deletes branches/worktrees or starts another Feature.

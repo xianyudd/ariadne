@@ -147,19 +147,31 @@ def classify(root: Path) -> str:
     )
 
 
+def decision_for_entity(entity: str, lifecycle_state: str | None = None) -> str:
+    """Map entity and lifecycle state to the host-independent decision."""
+    if entity == "PRODUCT_FEATURE":
+        return "CONTINUE" if lifecycle_state == "READY_TO_CLOSE" else "TERMINAL_BLOCKED"
+    return {
+        "NON_PRODUCT": "TERMINAL_NOT_APPLICABLE",
+        "UNKNOWN": "TERMINAL_BLOCKED",
+    }[entity]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path.cwd())
+    parser.add_argument("--lifecycle-state", choices=("IN_PROGRESS", "READY_TO_CLOSE"))
     args = parser.parse_args()
     root = args.root.resolve()
     branch = git(root, "branch", "--show-current")
     entity = classify(root)
+    decision = decision_for_entity(entity, args.lifecycle_state)
     status = {
         "PRODUCT_FEATURE": "READY_OR_BLOCKED",
         "NON_PRODUCT": "NOT_APPLICABLE",
         "UNKNOWN": "BLOCKED",
     }[entity]
-    print(f"BRANCH {branch}\nCLASSIFICATION {entity}\nSTATUS {status}")
+    print(f"BRANCH {branch}\nCLASSIFICATION {entity}\nDECISION {decision}\nSTATUS {status}")
     if entity == "UNKNOWN":
         print("REASON Unable to establish that current branch is a managed Product Feature.")
     return 0

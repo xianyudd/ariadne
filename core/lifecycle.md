@@ -1,6 +1,6 @@
 # Agent SDLC Lifecycle
 
-This is the host-independent lifecycle contract. Hosts expose commands; they do not redefine these decisions.
+This is the host-independent lifecycle contract. Hosts expose commands; they do not redefine these decisions. Workflow short-circuit behavior is defined by `.agent-sdlc/core/terminal-contract.md`.
 
 ## State machine
 
@@ -18,7 +18,7 @@ A handoff is evidence, not authority. Resolve conflicts using `.agent-sdlc/core/
 
 ## Managed lifecycle entities
 
-`/dev-merge` applies only to a proven managed Product Feature. Classify the current repository entity before any closure check:
+`/dev-merge` applies only to a proven managed Product Feature. Classification and the resulting `CONTINUE` or `TERMINAL_*` decision must follow `.agent-sdlc/core/terminal-contract.md` before any closure check:
 
 ```text
 PRODUCT_FEATURE | NON_PRODUCT | UNKNOWN
@@ -55,12 +55,11 @@ PREFLIGHT → RESTORE → FINAL VERIFY → FINAL SMOKE → SCOPE AUDIT
 ## `dev-merge`
 
 ```text
-PREFLIGHT → RESTORE → CLOSURE RECORD → CLOSURE CHECKPOINT
-→ MERGE → POST-MERGE VERIFY → STATE UPDATE → REPORT → STOP
+CLASSIFY → DECIDE CONTINUE → PREFLIGHT → RESTORE → CLOSURE RECORD
+→ CLOSURE CHECKPOINT → MERGE → POST-MERGE VERIFY → STATE UPDATE
+→ REPORT → STOP
 ```
 
 The default target is `main`, subject to project policy. A merge conflict, unsafe working tree, changed target since checkpoint, data-loss risk, or missing closure evidence is a Human Gate. Do not delete branches, tags, releases, or worktrees; do not squash, rebase, or amend unless project policy explicitly says otherwise.
-
-## Dry-run
 
 Each entry supports a read-only dry-run that validates the relevant preconditions and reports the selected decision without running product implementation, tests that mutate state, commits, reviews, merges, or handoff changes.
