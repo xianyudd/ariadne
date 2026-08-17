@@ -25,7 +25,9 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/jason/ariadne"
+Homepage = "https://github.com/xianyudd/ariadne"
+Repository = "https://github.com/xianyudd/ariadne"
+Issues = "https://github.com/xianyudd/ariadne/issues"
 
 [project.scripts]
 ariadne = "ariadne.cli:main"
