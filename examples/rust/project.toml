@@ -1,0 +1,40 @@
+# A Rust consumer, for contrast.
+#
+# The only thing that makes this file Rust is the marker strings, and Ariadne never
+# reads them as Rust — it reads them as the evidence that a gate named `test` passed.
+# `examples/generic/project.toml` is the same file with different words in it, and
+# `examples/python/project.toml` is the same again. That is the seam:
+#
+#   project configuration → quality gate provider → structured evidence → Ariadne
+#
+# Ariadne sees `test = PASS`. It cannot tell which of these three repositories it is
+# looking at, and it has no code path that could ask.
+
+[repository]
+default_branch = "main"
+spec_dir = "specs"
+tasks_file = "tasks.md"
+required_artifacts = ["spec.md", "plan.md", "tasks.md"]
+state_file = ".specify/memory/current-state.md"
+
+[repository.framework]
+paths = [".ariadne/", ".claude/", ".agents/", ".codex/", ".opencode/", ".specify/templates/"]
+files = ["AGENTS.md", "CLAUDE.md"]
+
+[repository.protected]
+paths = [".claude/worktrees/"]
+
+[planning]
+provider = "speckit"
+
+[[gates]]
+name = "test"
+markers = ["cargo test", "quality gate passed"]
+
+[[gates]]
+name = "lint"
+markers = ["cargo clippy", "clippy clean"]
+
+[[gates]]
+name = "format"
+markers = ["cargo fmt"]

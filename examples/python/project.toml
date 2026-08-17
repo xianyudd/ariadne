@@ -1,0 +1,34 @@
+# A Python consumer.
+#
+# Compare with `examples/rust/project.toml`. Different tools, different markers, and
+# the identical runtime — no branch inside Ariadne distinguishes them, because the
+# quality gate provider hands it the same structured verdict either way.
+
+[repository]
+default_branch = "main"
+spec_dir = "docs/features"
+tasks_file = "tasks.md"
+required_artifacts = ["spec.md", "plan.md", "tasks.md"]
+state_file = "docs/state.md"
+
+[repository.framework]
+paths = [".ariadne/", ".github/workflows/", "docs/features/"]
+files = ["AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md"]
+
+[repository.protected]
+paths = [".venv/"]
+
+[planning]
+provider = "directory"
+
+[[gates]]
+name = "test"
+markers = ["pytest", "\\d+ passed"]
+
+[[gates]]
+name = "lint"
+markers = ["ruff check", "all checks passed"]
+
+[[gates]]
+name = "format"
+markers = ["ruff format", "would be left unchanged"]

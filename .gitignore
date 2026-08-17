@@ -1,0 +1,14 @@
+# Build artefacts. The package is built from source on demand; nothing generated
+# belongs in history.
+build/
+dist/
+*.egg-info/
+
+# Bytecode. The suite runs with `sys.dont_write_bytecode`, so these only appear
+# when something else imports the package.
+__pycache__/
+*.py[cod]
+
+# Local environments.
+.venv/
+venv/

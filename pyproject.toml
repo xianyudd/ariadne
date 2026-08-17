@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ariadne-sdlc"
+version = "2.1.0"
+description = "A governed runtime for agentic software development."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{ name = "Jason" }]
+keywords = ["agent", "sdlc", "governance", "workflow", "lifecycle"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development :: Quality Assurance",
+  "Typing :: Typed",
+]
+
+# No runtime dependencies, and this is a property of the design rather than an
+# accident of the current feature set: the runtime reads a repository with `git`
+# and the standard library, and `tomllib` (3.11+) is why that is the floor.
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/jason/ariadne"
+
+[project.scripts]
+ariadne = "ariadne.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+# Contracts and workflow documents are part of the runtime, not documentation: a
+# host adapter is a prompt file with no import statement, and it loads both from an
+# installed Ariadne. They must ship inside the wheel.
+ariadne = ["contracts/*.md", "workflows/*.md"]

@@ -1,0 +1,75 @@
+# Everything Ariadne needs to know about this repository, and nothing more.
+#
+# Copy this to `.ariadne/project.toml` and edit. Every key is optional: with no file
+# at all Ariadne still runs, on generic defaults. It does not then quietly permit
+# more — with no framework paths declared, no change can be *proven* non-product, so
+# classification stays UNKNOWN and the runtime fails closed. Configuration earns
+# precision, it never earns permission.
+#
+# What can go in here: where things are, and what your gates are called.
+# What cannot: what TERMINAL_* means, what may be dispatched, whether a lifecycle
+# transition is legal, when a Human Gate is required, or any decision or reason code.
+# Those are the kernel's, in code, so that the same repository state and intent
+# produce the same envelope for every consumer and on every host.
+
+[repository]
+# The merge target.
+default_branch = "main"
+
+# Where per-feature specifications live, one directory per feature.
+spec_dir = "specs"
+
+# The task graph, relative to a feature directory.
+tasks_file = "tasks.md"
+
+# A feature directory must hold all of these before it counts as planned.
+required_artifacts = ["spec.md", "plan.md", "tasks.md"]
+
+# The durable handoff between sessions: the file a workflow writes its outcome to.
+# Omit it if this repository records none — recorded evidence is then empty rather
+# than assumed, which fails closed.
+state_file = ".ariadne/state.md"
+
+# Changes under these paths are framework or process work rather than product work.
+# This is what lets a workflow-only change be classified as NON_PRODUCT instead of
+# being mistaken for an unfinished feature.
+[repository.framework]
+paths = [".ariadne/", ".claude/", ".agents/"]
+files = ["AGENTS.md", "CLAUDE.md"]
+
+# Exempt from safety judgement, but always reported. A dirty protected path does not
+# make the tree unsafe; it also never goes unmentioned.
+[repository.protected]
+paths = []
+
+[planning]
+# How a branch is mapped to its feature directory.
+#
+#   directory   `<spec_dir>/<branch>` — no external tool (the default)
+#   speckit     read `.specify/feature.json`, for a Spec Kit repository
+#   none        this repository has no planning provider
+#
+# Ariadne's kernel imports, runs, and tests without any of them.
+provider = "directory"
+
+# Quality gates: your commands, Ariadne's structured result.
+#
+# Ariadne never runs a gate and never learns what tool it was. It reads your recorded
+# evidence for each gate's markers and sees only `test = PASS`, `lint = PASS`. Whether
+# that came from `cargo test`, `pytest`, `npm test`, `go test`, or `mvn test` is yours
+# to know and none of its business.
+#
+# `markers` are regular expressions, matched case-insensitively against the recorded
+# state file. A marker that cannot compile is reported as an error and proves nothing.
+
+[[gates]]
+name = "test"
+markers = ["tests? passed", "test suite passed"]
+
+[[gates]]
+name = "lint"
+markers = ["lint passed", "no lint (?:errors|warnings)"]
+
+[[gates]]
+name = "format"
+markers = ["format(?:ting)? (?:passed|clean)"]

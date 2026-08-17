@@ -1,0 +1,29 @@
+# Ariadne, configured as its own consumer.
+#
+# The runtime governs this repository the same way it governs any other: through a
+# file it reads and does not interpret. Nothing here is special because it happens to
+# describe Ariadne — compare `examples/`, which are the same file for other projects.
+
+[repository]
+default_branch = "main"
+spec_dir = "specs"
+tasks_file = "tasks.md"
+required_artifacts = ["spec.md", "plan.md", "tasks.md"]
+state_file = "docs/state.md"
+
+# What is *not* product here. A change confined to these is governance or plumbing;
+# a change to `src/` or `tests/` is a change to the framework itself.
+[repository.framework]
+paths = [".ariadne/", ".github/"]
+files = ["AGENTS.md", "CLAUDE.md", "README.md"]
+
+[repository.protected]
+paths = []
+
+[planning]
+provider = "directory"
+
+# One gate, recorded in prose the way every gate is: the suite's own last line.
+[[gates]]
+name = "test"
+markers = ["run_all.py", "wiring audit passed"]
