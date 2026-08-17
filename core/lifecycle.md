@@ -16,6 +16,17 @@ NEW → READY_FOR_IMPLEMENTATION → IN_PROGRESS → READY_TO_CLOSE → CLOSED
 
 A handoff is evidence, not authority. Resolve conflicts using `.agent-sdlc/core/state-contract.md`.
 
+Transitions are strictly forward and single-step: the five states above, in that
+order, are the only legal transitions. There is no rollback, no skipped state, and
+no self-transition. `.agent-sdlc/runtime/lifecycle.py` is the executable form of
+this machine, and an illegal transition is rejected by machine rather than by
+convention.
+
+`UNKNOWN` is not a position in this machine. It is what the resolver reports when
+repository evidence explains no declared position, and it fails closed: no workflow
+proceeds on it. Lifecycle state is always derived from repository evidence — never
+supplied, never guessed at the nearest plausible state.
+
 ## Managed lifecycle entities
 
 `/dev-merge` applies only to a proven managed Product Feature. Classification and the resulting `CONTINUE` or `TERMINAL_*` decision must follow `.agent-sdlc/core/terminal-contract.md` before any closure check:
@@ -26,6 +37,7 @@ PRODUCT_FEATURE | NON_PRODUCT | UNKNOWN
 
 `PRODUCT_FEATURE` continues the normal merge workflow. `NON_PRODUCT` returns `NOT_APPLICABLE` and stops before `READY_TO_CLOSE` or closure evidence checks. `UNKNOWN` returns `BLOCKED` with the inability to establish managed Product Feature identity. Read `.agent-sdlc/core/lifecycle-entity.md` for the evidence rules and status mapping.
 
+## `dev-new`
 
 ```text
 PREFLIGHT → INTAKE → SPECIFY → CLARIFY → PLAN → TASKS

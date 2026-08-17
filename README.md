@@ -6,6 +6,10 @@ Agent SDLC is the repository workflow protocol for turning one approved Feature 
 
 ```text
 .agent-sdlc/       Agent-independent Core + tflow project policy
+  core/            decision semantics, lifecycle, contracts
+  runtime/         control-flow enforcement (standard library only)
+  workflows/       host-independent workflow definitions
+  validation/      deterministic protocol checks
 .agents/           portable skill adapter (Codex/OpenCode-compatible)
 .claude/           Claude Code invocation and reviewer adapter
 .codex/            Codex reviewer adapter
@@ -16,7 +20,7 @@ Core must not depend on a host tool name, model name, provider, context-window n
 
 ### Core vs adapter
 
-Core owns lifecycle, terminal decision short-circuits, state precedence, task DAG validation, ready-frontier calculation, batch policy, review contract, Human Gates, Git policy, and context/session boundaries. Project policy owns quality gates, module ownership, persistence semantics, and protected paths. Adapters own only command exposure, portable loading instructions, host permissions, and reviewer delegation.
+Core owns lifecycle, terminal decision semantics, the Decision Envelope, state precedence, task DAG validation, ready-frontier calculation, batch policy, review contract, Human Gates, Git policy, and context/session boundaries. The runtime owns control-flow enforcement over a decision: Core says what a decision means, the runtime decides what may run next. Project policy owns quality gates, module ownership, persistence semantics, and protected paths. Adapters own only command exposure, portable loading instructions, host permissions, and reviewer delegation.
 
 To add another host, add a thin adapter that loads the existing `.agent-sdlc/workflows/` and required policy files. Do not copy the workflow into the adapter.
 
@@ -26,13 +30,6 @@ To add another host, add a thin adapter that loads the existing `.agent-sdlc/wor
 
 ```text
 PRODUCT_FEATURE | NON_PRODUCT | UNKNOWN
-```
-
-```text
-PRODUCT_FEATURE + READY_TO_CLOSE gates → READY
-PRODUCT_FEATURE + missing gates         → BLOCKED
-NON_PRODUCT                             → NOT_APPLICABLE
-UNKNOWN                                 → BLOCKED
 ```
 
 A workflow/infrastructure branch such as `agent-sdlc-v2` is `NON_PRODUCT` only when positive repository evidence supports that classification. A random branch with insufficient evidence remains `UNKNOWN`; absence of a Feature registration alone is not enough.
@@ -45,8 +42,71 @@ NON_PRODUCT                      → TERMINAL_NOT_APPLICABLE
 UNKNOWN                          → TERMINAL_BLOCKED
 ```
 
-Terminal decisions emit their status and stop immediately; only `CONTINUE` enters the normal Product Feature merge flow.
+Terminal decisions emit their status and stop immediately; only `CONTINUE` enters the normal Product Feature merge flow. Each decision carries the reportable status `READY`, `BLOCKED`, or `NOT_APPLICABLE`; that mapping belongs to `.agent-sdlc/core/terminal-contract.md`, which states it once. This table is the same table, verified row by row against the engine by `.agent-sdlc/validation/test_decision_consistency.py`.
 
+## Runtime
+
+A terminal decision must not depend on an agent choosing to stop, and a workflow decision must not depend on an agent reading a table correctly. Both belong to code. `.agent-sdlc/runtime/` is the one path from repository facts to a dispatched phase, and every host takes it:
+
+```text
+Evidence     collect_repository_evidence   what the repository contains
+State        resolve_state                 what state that evidence proves
+Decision     decide                        what the protocol permits
+Enforcement  TerminalGate                  whether control flow may continue
+Router       WorkflowRouter                where the one next action goes
+Workflow     .agent-sdlc/workflows/        how that phase is carried out
+```
+
+Each layer consumes the layer above and owns one question. No layer restates another's policy: evidence judges nothing, the engine dispatches nothing, the gate maps nothing, and the router decides nothing. `.agent-sdlc/runtime/README.md` documents the modules and the reason-code vocabulary.
+
+The decision crossing those boundaries is a structured Decision Envelope (`.agent-sdlc/core/decision-envelope.md`), and the runtime owns what may happen next:
+
+```text
+deterministic preflight
+    ↓
+Decision Envelope
+    ↓
+Runtime Terminal Gate
+    ↓
+TERMINAL_* → emit exactly one final report → no host dispatch
+CONTINUE   → host dispatch may proceed
+```
+
+`.agent-sdlc/runtime/` is standard-library Python with no host, model, or provider dependency: no async runtime, event bus, scheduler, database, or orchestration framework. The gate is the only path to dispatch, one gate decides one decision point, and it calls the dispatcher only for `CONTINUE`. Every envelope is revalidated where it is used, so a producer cannot force a terminal decision through by supplying a subclass, a lying comparison, a method it overrides, or an object mutated after construction. An envelope that is malformed, unknown, or from another protocol version fails closed to `TERMINAL_BLOCKED` with `PROTOCOL_DECISION_INVALID` and never becomes `CONTINUE`.
+
+Lifecycle state is derived from repository evidence on every runtime path. It cannot be supplied by an argument, and evidence that proves no position yields `UNKNOWN`, which fails closed rather than resolving to the nearest plausible state.
+
+```text
+Core      defines semantics
+Runtime   owns control-flow enforcement
+Workflow  uses Core semantics
+Adapter   may invoke an agent only after the runtime returns CONTINUE
+```
+
+### How hosts enter the runtime
+
+Every adapter — `.claude/skills/`, `.agents/skills/`, `.opencode/commands/` — runs one command before it loads a workflow or reads any evidence:
+
+```bash
+python3 .agent-sdlc/runtime/cli.py DEV_MERGE --human-gate UNKNOWN [--dry-run]
+```
+
+That command is the decision, not an advisory check. A non-zero exit means it has already printed the one final report and the adapter emits it and stops; exit `0` prints the single phase that is granted. Because all three families call the same entry point, the same repository state and intent produce the same envelope on every host. Establishing the Human Gate state is the only judgement an adapter makes, and anything but `APPROVED` fails closed.
+
+### Before and after
+
+| | Before | After |
+|---|---|---|
+| Decision policy | restated in Markdown per workflow and per host | one engine, `runtime/decision_engine.py`; Markdown is its specification and is tested against it |
+| Lifecycle state | injectable through a `--lifecycle-state` argument | derived from evidence; the argument no longer exists |
+| Terminal enforcement | an obligation the workflow prose placed on the agent | a gate the agent cannot reach around |
+| Dispatch | the agent chose its next phase | the router dispatches exactly the phase the envelope grants, exactly once |
+| Task graph | parsed wherever a workflow needed it | one resolver, `runtime/dag.py` |
+| Host adapters | each carried its own copy of the rules | each calls `runtime/cli.py` and carries none |
+
+`.agent-sdlc/validation/test_terminal_gate.py` proves the enforcement invariants against a spy dispatcher, with no agent involved: `INV-T1` terminal non-dispatch, `INV-T2` single terminal emission, `INV-T3` no post-terminal phase, `INV-T4` invalid decision fails closed. Coverage includes hostile envelope shapes, and the suite fails if any of them reaches the dispatcher. `test_runtime_closure.py` proves the same chain end to end from a real repository fixture, and `audit_wiring.py` reads the repository as text to prove nothing bypasses it.
+
+## Workflow entries
 
 - `/dev-next`: restore → DAG-aware one-batch selection → implement → project gates → commit → independent review/fix loop → handoff → stop.
 - `/dev-close`: final gates, smoke, scope and review audit → `READY_TO_CLOSE` Human Gate; never merges.

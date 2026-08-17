@@ -1,6 +1,35 @@
 # Workflow: dev-merge
 
-Load `core/lifecycle.md`, `core/lifecycle-entity.md`, `core/terminal-contract.md`, `core/state-contract.md`, `core/human-gates.md`, `core/git-policy.md`, `core/context-policy.md`, and all project policies.
+Load `core/lifecycle.md`, `core/lifecycle-entity.md`, `core/terminal-contract.md`, `core/decision-envelope.md`, `core/state-contract.md`, `core/human-gates.md`, `core/git-policy.md`, `core/context-policy.md`, and all project policies.
+
+## Decision table
+
+The strictest path. The runtime decides before any phase runs. For a proven
+`PRODUCT_FEATURE` with resolved reviews, a clean tracked working tree, and an
+`APPROVED` Human Gate:
+
+Task graph: complete
+
+```text
+NEW                      → TERMINAL_BLOCKED:LIFECYCLE_NOT_READY_TO_CLOSE
+READY_FOR_IMPLEMENTATION → TERMINAL_BLOCKED:LIFECYCLE_NOT_READY_TO_CLOSE
+IN_PROGRESS              → TERMINAL_BLOCKED:LIFECYCLE_NOT_READY_TO_CLOSE
+READY_TO_CLOSE           → CONTINUE
+CLOSED                   → TERMINAL_NOT_APPLICABLE:FEATURE_ALREADY_CLOSED
+```
+
+`READY_TO_CLOSE` is the only lifecycle state that merges. An incomplete task graph
+is `TERMINAL_BLOCKED:TASKS_INCOMPLETE` and an invalid one `DAG_INVALID`, checked
+here as well as during lifecycle derivation — in a real repository `READY_TO_CLOSE`
+already implies a valid, complete graph, so neither rule changes a real outcome.
+They exist so the strictest path does not depend on one derivation being correct.
+
+A merge is an outward-facing mutation, so it requires positive resolved-review
+evidence (`REVIEW_UNRESOLVED` otherwise), a clean tracked working tree
+(`WORKING_TREE_UNSAFE`), and an explicitly `APPROVED` Human Gate
+(`MERGE_AUTHORIZATION_REQUIRED`). `NOT_APPROVED` and `UNKNOWN` both fail closed.
+`--dry-run` mutates nothing, so it needs neither a clean tree nor authorisation.
+Reason codes are defined in `../runtime/README.md`.
 
 ## CLASSIFY → DECIDE
 
@@ -26,6 +55,8 @@ Type        WORKFLOW / INFRASTRUCTURE
 ```
 
 A `TERMINAL_*` decision is final for this invocation. The terminal branches MUST NOT enter `PREFLIGHT`, `RESTORE`, closure-record or closure-checkpoint lookup, Feature or alternate-path searches, quality evidence scans, reviewer work, Git merge preparation, or any other later phase. They MUST emit the result once and STOP without reading additional evidence to confirm it.
+
+Express the decision as a Decision Envelope (`core/decision-envelope.md`): `workflow` is this workflow's name, `phase` is `CLASSIFY`, `classification` is the entity above, `evidence` records the classification facts that were already read, and `next_legal_action` is `STOP` for every terminal branch. The envelope is the value the runtime terminal gate enforces. A host adapter reaches this workflow through `.agent-sdlc/runtime/`, so a `TERMINAL_*` envelope produces one final report and no host dispatch: a later phase is unreachable rather than merely forbidden.
 
 Classification must not rely only on `branch != main` or branch-name heuristics. The same repository state and Core rules produce the same classification on every host.
 

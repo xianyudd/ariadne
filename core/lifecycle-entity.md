@@ -1,10 +1,12 @@
 # Managed Lifecycle Entity
 
-`/dev-merge` manages only a repository object that can be proven to be a current Agent SDLC Product Feature. Classification is evidence-based and host-independent:
+Agent SDLC manages only a repository object that can be proven to be a current Product Feature. Classification is evidence-based and host-independent:
 
 ```text
 PRODUCT_FEATURE | NON_PRODUCT | UNKNOWN
 ```
+
+Every workflow entry point classifies before it decides, and each reads the result for its own purpose: `/dev-merge` treats a non-Product entity as nothing to merge, while `/dev-new` treats it as an error. The classification itself is the same fact in both cases, and `../runtime/classification.py` is its executable form — `RepositoryEvidence` in, one of these three values out, and nothing else. It judges no lifecycle and decides no workflow.
 
 ## Evidence
 
@@ -25,13 +27,6 @@ Use the current repository facts, not a branch-name guess:
 
 Do not create Feature metadata, tasks, closure records, or lifecycle state to make a branch mergeable.
 
-`/dev-merge` status mapping is separate from the execution decision. Use `.agent-sdlc/core/terminal-contract.md` for the host-independent `CONTINUE`/`TERMINAL_*` short-circuit semantics.
-
-```text
-PRODUCT_FEATURE + all READY_TO_CLOSE gates → READY
-PRODUCT_FEATURE + missing/failed gate    → BLOCKED
-NON_PRODUCT                              → NOT_APPLICABLE
-UNKNOWN                                  → BLOCKED
-```
+A classification is not by itself a decision. What each entry point does with it, the reportable status it carries, and where control flow may go next belong to `.agent-sdlc/core/terminal-contract.md` and the engine it specifies; the status is a projection of that one decision rather than a second mapping evaluated alongside it. This document is therefore the last word on *what the entity is*, and never on *what happens next*.
 
 `NOT_APPLICABLE` is a successful lifecycle guard: `/dev-merge` correctly rejected an unsupported entity. It is not a merge failure.

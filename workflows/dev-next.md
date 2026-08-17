@@ -2,6 +2,35 @@
 
 Load `core/lifecycle.md`, `core/state-contract.md`, `core/task-dag.md`, `core/batch-policy.md`, `core/review-contract.md`, `core/human-gates.md`, `core/git-policy.md`, `core/context-policy.md`, and `project/quality-gates.md`, `project/architecture.md`, `project/protected-paths.md`.
 
+## Decision table
+
+The runtime decides before any phase runs. For a proven `PRODUCT_FEATURE` with
+resolved reviews and a clean tracked working tree:
+
+Task graph: unfinished
+
+```text
+NEW                      → TERMINAL_BLOCKED:LIFECYCLE_BASE_STATE_NOT_ALLOWED
+READY_FOR_IMPLEMENTATION → CONTINUE
+IN_PROGRESS              → CONTINUE
+READY_TO_CLOSE           → TERMINAL_BLOCKED:LIFECYCLE_BASE_STATE_NOT_ALLOWED
+CLOSED                   → TERMINAL_NOT_APPLICABLE:FEATURE_ALREADY_CLOSED
+```
+
+Implementation happens at `READY_FOR_IMPLEMENTATION` or `IN_PROGRESS`. A complete
+task graph is `TERMINAL_NOT_APPLICABLE:FEATURE_ALREADY_CLOSED` from any state:
+there is no batch left to select, which is a successful guard rather than a
+failure.
+
+`NON_PRODUCT` is `TERMINAL_NOT_APPLICABLE:ENTITY_NOT_PRODUCT_FEATURE` and `UNKNOWN`
+is `TERMINAL_BLOCKED:ENTITY_UNKNOWN`. An invalid graph blocks with `DAG_INVALID`, a
+valid graph whose every unfinished task is blocked with `NO_READY_FRONTIER`,
+outstanding review findings with `REVIEW_UNRESOLVED`, and a dirty tracked working
+tree with `WORKING_TREE_UNSAFE` unless `--dry-run` is present. Reason codes are
+defined in `../runtime/README.md`.
+
+## Execution
+
 Preserve this exact bounded execution:
 
 ```text

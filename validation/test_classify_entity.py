@@ -81,9 +81,11 @@ assert module.classify_facts(
         changed_paths=["src/example.rs"],
     )
 ) == "UNKNOWN"
-assert module.decision_for_entity("PRODUCT_FEATURE", "READY_TO_CLOSE") == "CONTINUE"
-assert module.decision_for_entity("PRODUCT_FEATURE", "IN_PROGRESS") == "TERMINAL_BLOCKED"
-assert module.decision_for_entity("NON_PRODUCT") == "TERMINAL_NOT_APPLICABLE"
-assert module.decision_for_entity("UNKNOWN") == "TERMINAL_BLOCKED"
-assert module.decision_for_entity("PRODUCT_FEATURE", None) == "TERMINAL_BLOCKED"
+# This module classifies and nothing else. It used to also own
+# `decision_for_entity`, a second decision table; the entity/lifecycle → decision
+# mapping now lives only in `runtime/decision_engine.py` and is asserted by
+# `test_decision_engine.py`. Assert the second policy stays gone.
+assert not hasattr(module, "decision_for_entity"), "second decision policy reappeared"
+assert module.classify_facts is __import__("runtime.classification", fromlist=["x"]).classify_facts
+
 print("lifecycle classification checks passed")

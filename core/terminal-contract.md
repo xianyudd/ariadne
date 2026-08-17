@@ -26,6 +26,25 @@ Once a workflow produces any `TERMINAL_*` decision:
 
 Only `CONTINUE` permits transition to the next declared phase. A terminal decision has no legal successor phase.
 
+## Enforcement
+
+A decision is carried as a Decision Envelope (`.agent-sdlc/core/decision-envelope.md`) and enforced by the runtime terminal gate (`.agent-sdlc/runtime/`):
+
+```text
+deterministic preflight
+    ↓
+Decision Envelope
+    ↓
+Runtime Terminal Gate
+    ↓
+TERMINAL_* → emit exactly one final report → no host dispatch
+CONTINUE   → host dispatch may proceed
+```
+
+Core defines what each decision means; the runtime owns the control flow that follows from it. Inside the runtime the invariant above is structural rather than a request: the gate is the only path to dispatch, it decides once, and it dispatches only for `CONTINUE`. Every envelope is revalidated where it is used, so a producer cannot force a terminal decision through by changing the shape of what it hands over. A malformed, unknown, or wrong-version decision fails closed to `TERMINAL_BLOCKED` with `PROTOCOL_DECISION_INVALID`; it is never read as `CONTINUE`.
+
+A host adapter may invoke an agent only after the runtime returns `CONTINUE`. Honouring a terminal decision is not delegated to the agent that produced it: every adapter routes its envelope through the gate, so a workflow does not need to be trusted to stop itself.
+
 ## `/dev-merge` mapping
 
 Classification and the minimum lifecycle gate decision are performed before Product Feature closure phases:
@@ -37,7 +56,7 @@ NON_PRODUCT                      → TERMINAL_NOT_APPLICABLE
 UNKNOWN                          → TERMINAL_BLOCKED
 ```
 
-Only `CONTINUE` enters the normal Product Feature merge workflow. A Product Feature that is not yet `READY_TO_CLOSE` reports `STATUS = BLOCKED` and stops; it does not enter merge preparation.
+Only `CONTINUE` enters the normal Product Feature merge workflow. A Product Feature that is not yet `READY_TO_CLOSE` reports `STATUS = BLOCKED` and stops; it does not enter merge preparation. `.agent-sdlc/workflows/dev-merge.md` states the full per-lifecycle table and the conditions beyond lifecycle that this entry point checks; the reason codes it names are defined in `.agent-sdlc/runtime/README.md`.
 
 For terminal branches:
 
